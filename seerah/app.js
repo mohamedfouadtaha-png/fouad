@@ -77,7 +77,9 @@
       box = `<button class="node group" data-toggle="${key}"><span class="nm">${n.icon ? n.icon + " " : ""}${esc(n.label)}</span><span class="tt">${kids.length} أشخاص</span></button>`;
     }
     const tog = kids.length ? `<button class="toggle" data-toggle="${key}" aria-label="فتح وطي">${collapsed ? kids.length : ""}</button>` : "";
-    const sub = kids.length ? `<ul>${ordered.map(c => nodeHTML(c, key + "/" + kids.indexOf(c))).join("")}</ul>` : "";
+    // في الشجرة: لو كل الأولاد من غير فروع نرصّهم تحت بعض عشان الشجرة تبقى أضيق
+    const stack = mode === "tree" && kids.length >= 2 && kids.every(c => !(c.children || []).length);
+    const sub = kids.length ? `<ul${stack ? ' class="stack"' : ""}>${(stack ? kids : ordered).map(c => nodeHTML(c, key + "/" + kids.indexOf(c))).join("")}</ul>` : "";
     return `<li class="${collapsed ? "collapsed" : ""}" data-key="${key}"><div class="node-box">${box}${tog}</div>${sub}</li>`;
   }
 
@@ -127,18 +129,15 @@
       const [x1, y1] = p.d === 0 ? pol(rm * 0.8, c.a - 0.12) : pol(rm, p.a), [x2, y2] = pol(rm, c.a);
       return `<path class="rl b${c.branch} d${Math.min(c.d, 4)}" d="M${P(sx, sy)} C${P(x1, y1)} ${P(x2, y2)} ${P(c.x, c.y)}"/>`;
     }).join("");
+    // الأشخاص عناصر HTML فوق الخطوط (أخف بكتير من نصوص SVG أثناء الحركة على iOS)
     const circles = nodes.map(n => {
-      const [cx, cy] = P(n.x, n.y).split(",");
-      if (n.d === 0) return `<g class="rnode prophet" data-open="prophet" data-tid="prophet" transform="translate(${cx} ${cy})">
-        <circle r="54" class="halo"/><circle r="46"/><text class="ps" y="-10">ﷺ</text><text class="pn" y="22">محمد</text></g>`;
-      if (!n.id) return `<g class="rnode grp b${n.branch}" transform="translate(${cx} ${cy})"><circle r="34"/>
-        ${n.label.split(" ").length > 2 ? `<text y="-3">${esc(n.label.split(" ").slice(0, 1).join(" "))}</text><text y="14">${esc(n.label.split(" ").slice(1).join(" "))}</text>` : n.label.split(" ").map((w, i, a) => `<text y="${(i - (a.length - 1) / 2) * 16 + 5}">${esc(w)}</text>`).join("")}</g>`;
-      const f = isF(n.id), nm = shortName(n.id);
-      return `<g class="rnode ${f ? "f" : "m"}" data-open="${n.id}" data-tid="${n.id}" transform="translate(${cx} ${cy})">
-        <circle r="17"/><text class="ini" y="6">${esc(initial(n.id))}</text><text class="lbl" y="35">${esc(nm)}</text></g>`;
+      const pos = `left:${(n.x - minX).toFixed(1)}px;top:${(n.y - minY).toFixed(1)}px`;
+      if (n.d === 0) return `<button class="rnode prophet" data-open="prophet" data-tid="prophet" style="${pos}"><span class="dot"><b class="ps">ﷺ</b><b class="pn">محمد</b></span></button>`;
+      if (!n.id) return `<div class="rnode grp b${n.branch}" style="${pos}"><span class="dot">${n.label.split(" ").map(w => `<b>${esc(w)}</b>`).join("")}</span></div>`;
+      return `<button class="rnode ${isF(n.id) ? "f" : "m"}" data-open="${n.id}" data-tid="${n.id}" style="${pos}"><span class="dot">${esc(initial(n.id))}</span><span class="lbl">${esc(shortName(n.id))}</span></button>`;
     }).join("");
-    return `<svg class="radial" width="${W.toFixed(0)}" height="${H.toFixed(0)}" viewBox="0 0 ${W.toFixed(0)} ${H.toFixed(0)}" direction="rtl">
-      <g class="rings">${rings}</g><g class="links">${paths}</g><g>${circles}</g></svg>`;
+    return `<div class="radial" style="width:${W.toFixed(0)}px;height:${H.toFixed(0)}px">
+      <svg width="${W.toFixed(0)}" height="${H.toFixed(0)}" viewBox="0 0 ${W.toFixed(0)} ${H.toFixed(0)}"><g class="rings">${rings}</g><g class="links">${paths}</g></svg>${circles}</div>`;
   }
 
   function renderTree() {
@@ -164,9 +163,13 @@
   const view = { s: 1, x: 0, y: 0 };
   const MIN_S = 0.1, MAX_S = 2.5;
   const clampS = s => Math.min(MAX_S, Math.max(MIN_S, s));
+  // أثناء الحركة: تحديث واحد بس لكل frame
+  let rafPending = false;
+  function writeView() { zEl.style.transform = `translate3d(${view.x}px, ${view.y}px, 0) scale(${view.s})`; }
   function applyView(anim) {
-    zEl.style.transition = anim ? "transform .3s ease" : "none";
-    zEl.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.s})`;
+    if (anim) { zEl.style.transition = "transform .3s ease"; writeView(); return; }
+    zEl.style.transition = "none";
+    if (!rafPending) { rafPending = true; requestAnimationFrame(() => { rafPending = false; writeView(); }); }
   }
   function zoomAt(ns, cx, cy, anim) {
     ns = clampS(ns);
@@ -200,6 +203,7 @@
   function focusNode(id, s, yFrac, anim) {
     const el = zEl.querySelector(`[data-tid="${CSS.escape(id)}"]`);
     if (!el || !wrap.clientWidth) return null;
+    writeView(); // نتأكد إن آخر حركة اتطبقت قبل القياس
     const zr = zEl.getBoundingClientRect(), er = el.getBoundingClientRect();
     const ex = (er.left - zr.left) / view.s, ey = (er.top - zr.top) / view.s, ew = er.width / view.s;
     view.s = clampS(s);

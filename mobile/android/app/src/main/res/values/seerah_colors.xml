@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- لون الهيدر الأخضر: يظهر ورا شريط الحالة وشريط الإيماءات -->
+    <color name="seerah_bars">#0B3F32</color>
+</resources>

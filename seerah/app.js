@@ -520,7 +520,8 @@
       const at = new Date(now.getFullYear(), now.getMonth(), now.getDate() + d, NOTIFY_HOUR, 0, 0);
       if (at <= now) continue;
       const i = eventForDay(dayNo(at)), e = window.EVENTS[i];
-      list.push({ id: 1000 + d, title: "من السيرة اليوم: " + e.title, body: e.text.length > 140 ? e.text.slice(0, 140) + "…" : e.text, schedule: { at, allowWhileIdle: true }, extra: { event: i } });
+      list.push({ id: 1000 + d, title: "من السيرة اليوم: " + e.title, body: e.text.length > 140 ? e.text.slice(0, 140) + "…" : e.text, schedule: { at, allowWhileIdle: true }, isExactNotification: false, extra: { event: i } });
+      // isExactNotification: false = تذكير يومي ممكن يتأخر دقايق، ومش محتاج إذن "المنبهات" في أندرويد
     }
     if (list.length) await LN.schedule({ notifications: list });
     // schedule() قد ينجح ظاهريًا بينما يرفض النظام الحفظ، فنتحقق من العدد الفعلي
@@ -620,6 +621,16 @@
     if (Cap.Plugins.SplashScreen) requestAnimationFrame(() => Cap.Plugins.SplashScreen.hide({ fadeOutDuration: 250 }).catch(() => {}));
     const SB = Cap.Plugins.StatusBar;
     if (SB) { SB.setStyle({ style: "DARK" }).catch(() => {}); SB.setBackgroundColor && SB.setBackgroundColor({ color: "#0b3f32" }).catch(() => {}); }
+    // زرار الرجوع في أندرويد: يقفل البحث أو النبذة الأول، ويخرج من التطبيق بس لو مفيش حاجة مفتوحة
+    if (Cap.Plugins.App) {
+      Cap.Plugins.App.addListener("backButton", () => {
+        if (!$("#searchLayer").classList.contains("hidden")) closeSearch();
+        else if (stack.length) history.back();
+        else if (!$("#quiz").classList.contains("hidden")) $("#quiz [data-quit]")?.click();
+        else if (!$("#view-tree").classList.contains("active")) showView("tree");
+        else Cap.Plugins.App.exitApp();
+      });
+    }
     if (LN) {
       scheduleDaily().catch(() => {});
       LN.addListener("localNotificationActionPerformed", a => {

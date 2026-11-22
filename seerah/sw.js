@@ -1,6 +1,6 @@
 // يعمل التطبيق بدون إنترنت بعد أول فتح
-const CACHE = "seerah-v2";
-const ASSETS = ["./", "index.html", "styles.css", "app.js", "data-people.js", "data-seerah.js", "manifest.webmanifest", "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png",
+const CACHE = "seerah-v3";
+const ASSETS = ["./", "index.html", "styles.css", "app.js", "data-people.js", "data-seerah.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png",
   "fonts/amiri-arabic-400-normal.woff2", "fonts/amiri-arabic-700-normal.woff2", "fonts/tajawal-arabic-400-normal.woff2",
   "fonts/tajawal-arabic-500-normal.woff2", "fonts/tajawal-arabic-700-normal.woff2", "fonts/tajawal-arabic-800-normal.woff2"];
 

@@ -87,7 +87,7 @@ main { max-width: 900px; margin: 0 auto; padding: 14px 16px 24px; }
 @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
 /* ===== النسب ===== */
-.lineage { padding: 12px 14px; margin-bottom: 12px; }
+.lineage { padding: 12px 14px; margin-top: 12px; }
 .lineage-head { cursor: pointer; list-style: none; font-family: var(--font-head); font-size: 18px; font-weight: 700; color: var(--green-2); }
 .lineage-head::-webkit-details-marker { display: none; }
 .lineage[open] .lineage-head { margin-bottom: 6px; }
@@ -100,7 +100,7 @@ main { max-width: 900px; margin: 0 auto; padding: 14px 16px 24px; }
 .lineage-chain .sep { color: var(--muted); font-size: 12px; }
 
 /* ===== أدوات الشجرة ===== */
-.tree-toolbar { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; }
+.tree-toolbar { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .seg { display: inline-flex; background: var(--surface-2); border-radius: 12px; padding: 3px; }
 .seg-btn { padding: 6px 16px; border-radius: 10px; font-weight: 700; font-size: 14px; color: var(--muted); }
 .seg-btn.active { background: var(--surface); color: var(--green-2); box-shadow: var(--shadow); }
@@ -108,20 +108,29 @@ main { max-width: 900px; margin: 0 auto; padding: 14px 16px 24px; }
 .tool { min-width: 38px; height: 36px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); font-weight: 700; font-size: 18px; }
 .tool.wide { font-size: 13px; padding: 0 10px; }
 .tool:active { transform: scale(.96); }
-.hint { font-size: 12.5px; color: var(--muted); margin: 8px 2px; }
 
+/* مساحة الشجرة تملأ الشاشة، والتحريك والتكبير بالإصبع (transform) */
 .tree-wrap {
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
-  overflow: auto; height: min(62vh, 640px); position: relative; overscroll-behavior: contain;
+  overflow: hidden; position: relative; overscroll-behavior: contain;
+  height: calc(100vh - 150px - var(--nav-h) - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  height: calc(100dvh - 150px - var(--nav-h) - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  min-height: 340px;
   background-image: radial-gradient(var(--line) 1px, transparent 1px); background-size: 18px 18px;
-  touch-action: pan-x pan-y;
+  touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab;
 }
-.tree-zoom { display: inline-block; min-width: 100%; padding: 18px 16px 30px; }
+.tree-wrap.dragging { cursor: grabbing; }
+.tree-zoom { position: absolute; top: 0; left: 0; padding: 18px 16px 30px; transform-origin: 0 0; will-change: transform; width: max-content; }
+.zoom-ctl { position: absolute; left: 10px; bottom: 10px; display: flex; flex-direction: column; gap: 6px; z-index: 2; }
+.zoom-ctl .tool { width: 42px; height: 42px; font-size: 20px; box-shadow: var(--shadow); }
+.tree-hint { position: absolute; top: 8px; right: 8px; left: 8px; margin: 0; padding: 6px 10px; border-radius: 10px; text-align: center;
+  font-size: 12.5px; background: color-mix(in srgb, var(--surface) 88%, transparent); color: var(--muted); pointer-events: none; transition: opacity .4s; }
+.tree-hint.gone { opacity: 0; }
 
 /* شكل الشجرة (من أعلى لأسفل) */
 .tree-zoom.mode-tree { direction: ltr; text-align: center; }
 .mode-tree ul { position: relative; display: flex; justify-content: center; padding: 22px 0 0; margin: 0; list-style: none; }
-.mode-tree li { position: relative; padding: 22px 5px 0; display: flex; flex-direction: column; align-items: center; }
+.mode-tree li { position: relative; padding: 22px 3px 0; display: flex; flex-direction: column; align-items: center; }
 .mode-tree > ul { padding-top: 0; }
 .mode-tree > ul > li { padding-top: 0; }
 .mode-tree li::before, .mode-tree li::after {
@@ -153,14 +162,14 @@ main { max-width: 900px; margin: 0 auto; padding: 14px 16px 24px; }
 /* العقدة */
 .node-box { position: relative; display: inline-flex; flex-direction: column; align-items: center; gap: 4px; direction: rtl; }
 .node {
-  min-width: 92px; max-width: 150px; padding: 7px 10px 6px; border-radius: 14px;
+  min-width: 70px; max-width: 118px; padding: 6px 8px 5px; border-radius: 12px;
   background: var(--male); border: 1.5px solid var(--male-b); text-align: center; line-height: 1.35;
   transition: transform .15s, box-shadow .15s;
 }
 .mode-list .node { max-width: none; text-align: right; display: flex; align-items: baseline; gap: 8px; }
 .node:active { transform: scale(.96); }
-.node .nm { display: block; font-weight: 800; font-size: 14.5px; }
-.node .tt { display: block; font-size: 11.5px; color: var(--muted); }
+.node .nm { display: block; font-weight: 800; font-size: 13.5px; }
+.node .tt { display: block; font-size: 10.5px; color: var(--muted); }
 .node.f { background: var(--female); border-color: var(--female-b); }
 .node.group { background: var(--group); border: 1.5px dashed var(--gold); font-weight: 700; }
 .node.group .nm { font-size: 13.5px; }

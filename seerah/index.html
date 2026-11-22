@@ -7,7 +7,7 @@
 <meta name="description" content="السيرة النبوية المبسطة: شجرة نسب النبي ﷺ وأهله، أمهات المؤمنين، الصحابة، الغزوات، وما لا يسع المسلم جهله.">
 <meta name="theme-color" content="#0d4a3a">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="السيرة النبوية">
@@ -16,7 +16,7 @@
 <body>
 <header class="topbar">
   <div class="brand">
-    <img class="brand-mark" src="icons/icon.svg" alt="" width="38" height="38">
+    <img class="brand-mark" src="icons/icon-192.png" alt="" width="38" height="38">
     <div>
       <h1>السيرة النبوية</h1>
       <p id="viewSub">شجرة النسب الشريف</p>
@@ -31,24 +31,29 @@
 <main id="main">
   <!-- الشجرة -->
   <section class="view active" id="view-tree" data-sub="شجرة النسب الشريف">
-    <details class="lineage card">
-      <summary class="lineage-head"><span class="ornament">۞</span> النسب الشريف <span class="muted">إلى عدنان · اضغط للعرض</span></summary>
-      <div class="lineage-chain" id="lineage"></div>
-    </details>
     <div class="tree-toolbar">
       <div class="seg" role="tablist">
         <button class="seg-btn active" data-mode="tree">شجرة</button>
         <button class="seg-btn" data-mode="list">قائمة</button>
       </div>
       <div class="tool-group">
-        <button class="tool" id="zoomOut" aria-label="تصغير">−</button>
-        <button class="tool" id="zoomIn" aria-label="تكبير">+</button>
         <button class="tool wide" id="expandAll">فتح الكل</button>
         <button class="tool wide" id="centerBtn">النبي ﷺ</button>
       </div>
     </div>
-    <p class="hint">اضغط على أي اسم لعرض نبذة عنه، واضغط على الرقم لفتح الفروع.</p>
-    <div class="tree-wrap" id="treeWrap"><div class="tree-zoom" id="treeZoom"></div></div>
+    <div class="tree-wrap" id="treeWrap">
+      <div class="tree-zoom" id="treeZoom"></div>
+      <p class="tree-hint" id="treeHint">حرّك بإصبع، وكبّر وصغّر بإصبعين. اضغط على اسم لعرض نبذة عنه.</p>
+      <div class="zoom-ctl">
+        <button class="tool" id="zoomIn" aria-label="تكبير">+</button>
+        <button class="tool" id="zoomOut" aria-label="تصغير">−</button>
+        <button class="tool" id="zoomFit" aria-label="عرض الشجرة كاملة">⤢</button>
+      </div>
+    </div>
+    <details class="lineage card">
+      <summary class="lineage-head"><span class="ornament">۞</span> النسب الشريف <span class="muted">إلى عدنان · اضغط للعرض</span></summary>
+      <div class="lineage-chain" id="lineage"></div>
+    </details>
     <div class="legend">
       <span><i class="lg lg-p"></i>النبي ﷺ</span>
       <span><i class="lg lg-m"></i>رجال</span>

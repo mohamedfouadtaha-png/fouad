@@ -34,7 +34,10 @@
     $("#viewSub").textContent = $("#view-" + name).dataset.sub;
     store.set("seerah.view", name);
     window.scrollTo({ top: 0 });
+    // أول مرة تظهر الشجرة: نعرضها كاملة داخل الإطار
+    if (name === "tree" && !treeFitted) requestAnimationFrame(() => { if (!treeFitted) { initialView(); treeFitted = !!wrap.clientWidth; } });
   }
+  let treeFitted = false;
   $("#nav").addEventListener("click", e => { const b = e.target.closest(".nav-btn"); if (b) showView(b.dataset.view); });
 
   // ===== المظهر =====
@@ -55,7 +58,6 @@
 
   // ===== الشجرة =====
   let mode = store.get("seerah.treeMode") || "tree";
-  let zoom = 1;
   const collapsedState = new Map(); // مفتاح المسار -> مطوي؟
 
   function nodeHTML(n, path) {
@@ -82,7 +84,6 @@
     const z = $("#treeZoom");
     z.className = "tree-zoom mode-" + mode;
     z.innerHTML = `<ul>${nodeHTML(TREE, "r")}</ul>`;
-    z.style.zoom = zoom;
     document.querySelectorAll(".seg-btn").forEach(b => b.classList.toggle("active", b.dataset.mode === mode));
   }
 
@@ -96,21 +97,58 @@
     if (t) t.textContent = c ? li.querySelectorAll(":scope > ul > li").length : "";
   }
 
+  // ----- التحريك والتكبير (مثل الخرائط) -----
+  const wrap = $("#treeWrap"), zEl = $("#treeZoom");
+  const view = { s: 1, x: 0, y: 0 };
+  const MIN_S = 0.1, MAX_S = 2.5;
+  const clampS = s => Math.min(MAX_S, Math.max(MIN_S, s));
+  function applyView(anim) {
+    zEl.style.transition = anim ? "transform .3s ease" : "none";
+    zEl.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.s})`;
+  }
+  function zoomAt(ns, cx, cy, anim) {
+    ns = clampS(ns);
+    const k = ns / view.s;
+    view.x = cx - (cx - view.x) * k; view.y = cy - (cy - view.y) * k; view.s = ns;
+    applyView(anim);
+  }
+  // عرض الشجرة كاملة داخل الإطار
+  function fitTree(anim) {
+    const W = wrap.clientWidth, H = wrap.clientHeight, w = zEl.offsetWidth, h = zEl.offsetHeight;
+    if (!W || !w) return;
+    const s = clampS(mode === "list" ? Math.min(W / w, 1) : Math.min(W / w, H / h, 1));
+    view.s = s; view.x = (W - w * s) / 2; view.y = mode === "list" ? 0 : Math.max(0, (H - h * s) / 2);
+    applyView(anim);
+  }
   function centerOn(id, flash) {
     // افتح كل الآباء حتى يظهر الشخص
     const path = findPath(TREE, id, "r");
     if (!path) return false;
     path.slice(0, -1).forEach(k => collapsedState.set(k, false));
     renderTree();
-    const el = document.querySelector(`.node[data-tid="${CSS.escape(id)}"]`);
+    const el = focusNode(id, Math.max(view.s, 0.85), 1 / 3, true);
     if (!el) return false;
-    const wrap = $("#treeWrap");
-    requestAnimationFrame(() => {
-      const wr = wrap.getBoundingClientRect(), er = el.getBoundingClientRect();
-      wrap.scrollBy({ left: er.left - wr.left - wr.width / 2 + er.width / 2, top: er.top - wr.top - wr.height / 6, behavior: "smooth" });
-      if (flash) { el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
-    });
+    treeFitted = true;
+    if (flash) { el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
     return true;
+  }
+  // يحرّك الشجرة بحيث يكون الشخص في منتصف العرض وعلى ارتفاع yFrac من الإطار
+  function focusNode(id, s, yFrac, anim) {
+    const el = document.querySelector(`.node[data-tid="${CSS.escape(id)}"]`);
+    if (!el || !wrap.clientWidth) return null;
+    const zr = zEl.getBoundingClientRect(), er = el.getBoundingClientRect();
+    const ex = (er.left - zr.left) / view.s, ey = (er.top - zr.top) / view.s, ew = er.width / view.s;
+    view.s = clampS(s);
+    view.x = wrap.clientWidth / 2 - (ex + ew / 2) * view.s;
+    view.y = wrap.clientHeight * yFrac - ey * view.s;
+    applyView(anim);
+    return el;
+  }
+  // البداية: الشجرة كاملة لو مقروءة، وإلا تصغير مريح حول النبي ﷺ
+  const START_S = 0.4;
+  function initialView() {
+    fitTree();
+    if (mode === "tree" && view.s < START_S) focusNode("prophet", START_S, 0.42, false);
   }
   function findPath(n, id, key) {
     if (n.id === id) return [key];
@@ -128,30 +166,80 @@
     if (t) { toggleKey(t.dataset.toggle); return; }
   });
   document.querySelectorAll(".seg-btn").forEach(b => b.addEventListener("click", () => {
-    mode = b.dataset.mode; store.set("seerah.treeMode", mode); renderTree(); centerOn("prophet");
+    mode = b.dataset.mode; store.set("seerah.treeMode", mode); renderTree(); initialView();
   }));
-  const setZoom = z => { zoom = Math.min(1.6, Math.max(.5, Math.round(z * 10) / 10)); $("#treeZoom").style.zoom = zoom; };
-  $("#zoomIn").addEventListener("click", () => setZoom(zoom + .1));
-  $("#zoomOut").addEventListener("click", () => setZoom(zoom - .1));
+  const zoomCenter = f => zoomAt(view.s * f, wrap.clientWidth / 2, wrap.clientHeight / 2, true);
+  $("#zoomIn").addEventListener("click", () => zoomCenter(1.4));
+  $("#zoomOut").addEventListener("click", () => zoomCenter(1 / 1.4));
+  $("#zoomFit").addEventListener("click", () => fitTree(true));
   let allOpen = false;
   $("#expandAll").addEventListener("click", () => {
     allOpen = !allOpen;
     if (allOpen) { for (const k of collapsedState.keys()) collapsedState.set(k, false); }
     else collapsedState.clear(); // رجوع للوضع الافتراضي
     $("#expandAll").textContent = allOpen ? "طي الكل" : "فتح الكل";
-    renderTree(); centerOn("prophet");
+    renderTree(); fitTree(true);
   });
   $("#centerBtn").addEventListener("click", () => centerOn("prophet", true));
 
-  // تكبير بإصبعين داخل الشجرة
+  // إصبع واحد للتحريك، وإصبعان للتكبير والتصغير (يعمل باللمس والماوس)
   (() => {
-    const wrap = $("#treeWrap"); let d0 = 0, z0 = 1;
-    const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
-    wrap.addEventListener("touchstart", e => { if (e.touches.length === 2) { d0 = dist(e.touches); z0 = zoom; } }, { passive: true });
-    wrap.addEventListener("touchmove", e => {
-      if (e.touches.length === 2 && d0) { e.preventDefault(); setZoom(z0 * dist(e.touches) / d0); }
+    const pts = new Map();
+    let start = null, moved = false, suppressClick = false;
+    const local = (x, y) => { const r = wrap.getBoundingClientRect(); return { x: x - r.left, y: y - r.top }; };
+    const snapshot = () => {
+      const p = [...pts.values()];
+      start = { s: view.s, x: view.x, y: view.y, p };
+      if (p.length >= 2) {
+        start.d = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y) || 1;
+        start.c = local((p[0].x + p[1].x) / 2, (p[0].y + p[1].y) / 2);
+      }
+    };
+    const hideHint = () => $("#treeHint").classList.add("gone");
+    wrap.addEventListener("pointerdown", e => {
+      if (e.target.closest(".zoom-ctl") || (e.pointerType === "mouse" && e.button !== 0)) return;
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pts.size === 1) moved = false;
+      snapshot();
+    });
+    window.addEventListener("pointermove", e => {
+      if (!pts.has(e.pointerId)) return;
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      const p = [...pts.values()];
+      if (p.length === 1 && start.p.length === 1) {
+        const dx = p[0].x - start.p[0].x, dy = p[0].y - start.p[0].y;
+        if (!moved && Math.hypot(dx, dy) < 6) return;
+        moved = true; wrap.classList.add("dragging"); hideHint();
+        view.x = start.x + dx; view.y = start.y + dy; applyView(false);
+      } else if (p.length >= 2 && start.d) {
+        moved = true; hideHint();
+        const d = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
+        const c = local((p[0].x + p[1].x) / 2, (p[0].y + p[1].y) / 2);
+        const ns = clampS(start.s * d / start.d);
+        // النقطة اللي تحت الإصبعين تفضل تحتهم
+        const px = (start.c.x - start.x) / start.s, py = (start.c.y - start.y) / start.s;
+        view.s = ns; view.x = c.x - px * ns; view.y = c.y - py * ns; applyView(false);
+      }
+    });
+    const end = e => {
+      if (!pts.delete(e.pointerId)) return;
+      if (pts.size) snapshot();
+      else { wrap.classList.remove("dragging"); if (moved) { suppressClick = true; setTimeout(() => { suppressClick = false; }, 80); } }
+    };
+    window.addEventListener("pointerup", end);
+    window.addEventListener("pointercancel", end);
+    // بعد السحب ما نفتحش النبذة بالغلط
+    wrap.addEventListener("click", e => { if (suppressClick) { e.stopPropagation(); e.preventDefault(); suppressClick = false; } }, true);
+    // عجلة الماوس / لوحة اللمس في الكمبيوتر
+    wrap.addEventListener("wheel", e => {
+      e.preventDefault(); hideHint();
+      const c = local(e.clientX, e.clientY);
+      if (e.ctrlKey || e.deltaMode === 1) zoomAt(view.s * Math.exp(-e.deltaY * (e.deltaMode === 1 ? 0.05 : 0.01)), c.x, c.y, false);
+      else { view.x -= e.deltaX; view.y -= e.deltaY; applyView(false); }
     }, { passive: false });
-    wrap.addEventListener("touchend", () => { d0 = 0; });
+    // منع تكبير الصفحة كلها في iOS
+    ["gesturestart", "gesturechange"].forEach(t => wrap.addEventListener(t, e => e.preventDefault()));
+    window.addEventListener("resize", () => { if (!moved) initialView(); });
   })();
 
   // ===== السيرة =====
@@ -460,7 +548,6 @@
   renderTree(); renderPeriods(); renderTimeline(); renderGhazawat(); renderPeopleChips(); renderPeople(); showBest();
   renderToday(); renderFavs();
   showView(store.get("seerah.view") || "tree");
-  requestAnimationFrame(() => centerOn("prophet"));
 
   if (isNative) {
     // داخل تطبيق الموبايل: إخفاء شاشة البداية بعد الرسم، شريط الحالة، تجديد الإشعارات، وفتح الحدث عند الضغط على الإشعار

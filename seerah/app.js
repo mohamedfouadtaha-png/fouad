@@ -80,10 +80,71 @@
     return `<li class="${collapsed ? "collapsed" : ""}" data-key="${key}"><div class="node-box">${box}${tog}</div>${sub}</li>`;
   }
 
+  // ----- الشجرة الدائرية: النبي ﷺ في المركز والفروع حوله بخطوط منحنية -----
+  const L = (id, children) => children ? { id, children } : { id };
+  const RADIAL = { id: "prophet", children: [
+    { label: "الآباء والأجداد", b: 0, children: [L("abdullah", [L("abdulmuttalib", [L("hashim", [L("abdmanaf", [L("qusay")])])])]), L("amina")] },
+    { label: "الأعمام", b: 1, children: [L("harith", [L("abusufyanharith")]), L("abutalib", [L("ali"), L("jafar"), L("aqil"), L("ummhani")]), L("hamza"),
+      L("abbas", [L("ibnabbas"), L("fadl")]), L("abulahab"), L("zubayrAM")] },
+    { label: "العمات", b: 2, children: [L("safiyya_aunt", [L("zubayr")]), L("atika"), L("umayma"), L("barra"), L("arwa"), L("ummhakim")] },
+    { label: "الأبناء والأحفاد", b: 3, children: [L("qasim"), L("zaynab_d", [L("umama")]), L("ruqayya"), L("ummkulthum"),
+      L("fatima", [L("hasan"), L("husayn"), L("zaynabali"), L("ummkulthumali")]), L("abdullah_son"), L("ibrahim")] },
+    { label: "أمهات المؤمنين", b: 4, children: ["khadija", "sawda", "aisha", "hafsa", "zaynabkhuzayma", "ummsalama", "zaynabjahsh", "juwayriya", "ummhabiba", "safiyya", "maymuna", "mariya"].map(id => L(id)) },
+    { label: "المرضعات والحاضنة", b: 5, children: [L("thuwayba"), L("halima"), L("ummayman")] }
+  ] };
+  const RSTEP = 150, LABEL_W = 78;
+  function radialSVG() {
+    // 1) كل فرع ياخد زاوية على قد المساحة اللي أسماؤه محتاجاها
+    let scale = 1;
+    const R = d => d === 0 ? 0 : (130 + (d - 1) * RSTEP) * scale;
+    const need = (n, d) => { n.d = d; const kids = n.children || []; n.need = kids.length ? kids.reduce((s, c) => s + need(c, d + 1), 0) : 0; n.need = Math.max(n.need, d ? LABEL_W / R(d) : 0); return n.need; };
+    let total = need(RADIAL, 0);
+    if (total > Math.PI * 2) { scale = total / (Math.PI * 2); total = need(RADIAL, 0); }
+    const start = -Math.PI / 2 - RADIAL.children[0].need / total * Math.PI; // فرع الأجداد لفوق
+    const nodes = [], links = [];
+    const place = (n, a0, a1, branch, parent) => {
+      n.a = (a0 + a1) / 2; n.r = R(n.d); n.x = n.r * Math.cos(n.a); n.y = n.r * Math.sin(n.a);
+      n.branch = n.b !== undefined ? n.b : branch;
+      nodes.push(n); if (parent) links.push([parent, n]);
+      let acc = a0;
+      (n.children || []).forEach(c => { const span = (a1 - a0) * c.need / n.need; place(c, acc, acc + span, n.branch, n); acc += span; });
+    };
+    place(RADIAL, start, start + Math.PI * 2, -1, null);
+    // 2) أبعاد الرسم
+    const pad = 70, xs = nodes.map(n => n.x), ys = nodes.map(n => n.y);
+    const minX = Math.min(...xs) - pad, maxX = Math.max(...xs) + pad, minY = Math.min(...ys) - pad, maxY = Math.max(...ys) + pad + 20;
+    const W = maxX - minX, H = maxY - minY, P = (x, y) => `${(x - minX).toFixed(1)},${(y - minY).toFixed(1)}`;
+    const pol = (r, a) => [r * Math.cos(a), r * Math.sin(a)];
+    // 3) دواير خلفية + خطوط منحنية + الأشخاص
+    const maxD = Math.max(...nodes.map(n => n.d));
+    let rings = "";
+    for (let d = 1; d <= maxD; d++) { const [cx, cy] = [-minX, -minY]; rings += `<circle class="ring" cx="${cx}" cy="${cy}" r="${R(d)}"/>`; }
+    const paths = links.map(([p, c]) => {
+      const rm = (p.r + c.r) / 2;
+      // من المركز: خط يطلع من حافة دايرة النبي ﷺ في اتجاه الفرع، بانحناءة خفيفة
+      const [sx, sy] = p.d === 0 ? pol(56, c.a) : [p.x, p.y];
+      const [x1, y1] = p.d === 0 ? pol(rm * 0.8, c.a - 0.12) : pol(rm, p.a), [x2, y2] = pol(rm, c.a);
+      return `<path class="rl b${c.branch} d${Math.min(c.d, 4)}" d="M${P(sx, sy)} C${P(x1, y1)} ${P(x2, y2)} ${P(c.x, c.y)}"/>`;
+    }).join("");
+    const circles = nodes.map(n => {
+      const [cx, cy] = P(n.x, n.y).split(",");
+      if (n.d === 0) return `<g class="rnode prophet" data-open="prophet" data-tid="prophet" transform="translate(${cx} ${cy})">
+        <circle r="54" class="halo"/><circle r="46"/><text class="ps" y="-10">ﷺ</text><text class="pn" y="22">محمد</text></g>`;
+      if (!n.id) return `<g class="rnode grp b${n.branch}" transform="translate(${cx} ${cy})"><circle r="34"/>
+        ${n.label.split(" ").length > 2 ? `<text y="-3">${esc(n.label.split(" ").slice(0, 1).join(" "))}</text><text y="14">${esc(n.label.split(" ").slice(1).join(" "))}</text>` : n.label.split(" ").map((w, i, a) => `<text y="${(i - (a.length - 1) / 2) * 16 + 5}">${esc(w)}</text>`).join("")}</g>`;
+      const f = isF(n.id), nm = shortName(n.id);
+      return `<g class="rnode ${f ? "f" : "m"}" data-open="${n.id}" data-tid="${n.id}" transform="translate(${cx} ${cy})">
+        <circle r="17"/><text class="ini" y="6">${esc(initial(n.id))}</text><text class="lbl" y="35">${esc(nm)}</text></g>`;
+    }).join("");
+    return `<svg class="radial" width="${W.toFixed(0)}" height="${H.toFixed(0)}" viewBox="0 0 ${W.toFixed(0)} ${H.toFixed(0)}" direction="rtl">
+      <g class="rings">${rings}</g><g class="links">${paths}</g><g>${circles}</g></svg>`;
+  }
+
   function renderTree() {
     const z = $("#treeZoom");
     z.className = "tree-zoom mode-" + mode;
-    z.innerHTML = `<ul>${nodeHTML(TREE, "r")}</ul>`;
+    z.innerHTML = mode === "tree" ? radialSVG() : `<ul>${nodeHTML(TREE, "r")}</ul>`;
+    $("#expandAll").hidden = mode === "tree";
     document.querySelectorAll(".seg-btn").forEach(b => b.classList.toggle("active", b.dataset.mode === mode));
   }
 
@@ -121,12 +182,14 @@
     applyView(anim);
   }
   function centerOn(id, flash) {
-    // افتح كل الآباء حتى يظهر الشخص
-    const path = findPath(TREE, id, "r");
-    if (!path) return false;
-    path.slice(0, -1).forEach(k => collapsedState.set(k, false));
-    renderTree();
-    const el = focusNode(id, Math.max(view.s, 0.85), 1 / 3, true);
+    if (mode === "list") {
+      // افتح كل الآباء حتى يظهر الشخص في القائمة
+      const path = findPath(TREE, id, "r");
+      if (!path) return false;
+      path.slice(0, -1).forEach(k => collapsedState.set(k, false));
+      renderTree();
+    }
+    const el = focusNode(id, Math.max(view.s, 0.85), mode === "tree" ? 0.5 : 1 / 3, true);
     if (!el) return false;
     treeFitted = true;
     if (flash) { el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
@@ -134,7 +197,7 @@
   }
   // يحرّك الشجرة بحيث يكون الشخص في منتصف العرض وعلى ارتفاع yFrac من الإطار
   function focusNode(id, s, yFrac, anim) {
-    const el = document.querySelector(`.node[data-tid="${CSS.escape(id)}"]`);
+    const el = zEl.querySelector(`[data-tid="${CSS.escape(id)}"]`);
     if (!el || !wrap.clientWidth) return null;
     const zr = zEl.getBoundingClientRect(), er = el.getBoundingClientRect();
     const ex = (er.left - zr.left) / view.s, ey = (er.top - zr.top) / view.s, ew = er.width / view.s;
@@ -159,7 +222,7 @@
     }
     return null;
   }
-  const inTree = id => !!findPath(TREE, id, "r");
+  const inTree = id => !!(findPath(RADIAL, id, "r") || findPath(TREE, id, "r"));
 
   $("#treeZoom").addEventListener("click", e => {
     const t = e.target.closest("[data-toggle]");

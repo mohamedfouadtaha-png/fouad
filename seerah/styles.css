@@ -367,3 +367,28 @@ li:not(.collapsed) > .node-box .toggle::before { content: "−"; }
 .favs .empty { padding: 4px 0; text-align: right; font-size: 13.5px; }
 .sheet-fav { position: absolute; top: 10px; right: 12px; width: 34px; height: 34px; border-radius: 50%; background: var(--surface-2); font-size: 19px; line-height: 1; z-index: 2; color: var(--gold); }
 .sheet-fav[aria-pressed="true"] { background: var(--gold); color: #fff; }
+
+/* ===== الشجرة الدائرية ===== */
+.radial { display: block; overflow: visible; font-family: var(--font); }
+.radial .ring { fill: none; stroke: var(--line); stroke-width: 1.2; stroke-dasharray: 3 7; }
+.radial .rl { fill: none; stroke-linecap: round; opacity: .7; }
+.radial .rl.d1 { stroke-width: 6; } .radial .rl.d2 { stroke-width: 3.5; } .radial .rl.d3 { stroke-width: 2.5; } .radial .rl.d4 { stroke-width: 2; }
+.radial .b0 { --bc: #b8892b; } .radial .b1 { --bc: #16705a; } .radial .b2 { --bc: #a5506a; }
+.radial .b3 { --bc: #2b7bb9; } .radial .b4 { --bc: #c0567a; } .radial .b5 { --bc: #7a5bb5; }
+.radial .rl { stroke: var(--bc); }
+.radial .rnode { cursor: pointer; }
+.radial .rnode text { text-anchor: middle; direction: rtl; pointer-events: none; }
+.radial .rnode.m circle { fill: var(--male); stroke: var(--male-b); stroke-width: 2.5; }
+.radial .rnode.f circle { fill: var(--female); stroke: var(--female-b); stroke-width: 2.5; }
+.radial .rnode .ini { font-family: var(--font-head); font-weight: 700; font-size: 17px; fill: var(--male-b); }
+.radial .rnode.f .ini { fill: var(--female-b); }
+.radial .rnode .lbl { font-weight: 800; font-size: 14px; fill: var(--text); paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+.radial .rnode:hover circle, .radial .rnode:active circle { stroke-width: 4; }
+.radial .grp circle { fill: var(--surface); stroke: var(--bc); stroke-width: 3; }
+.radial .grp text { font-weight: 800; font-size: 13px; fill: var(--bc); }
+.radial .prophet .halo { fill: none; stroke: var(--gold); stroke-width: 3; stroke-dasharray: 2 5; }
+.radial .prophet circle:not(.halo) { fill: #0f5643; stroke: var(--gold); stroke-width: 4; }
+.radial .prophet .pn { font-family: "Amiri", serif; font-weight: 700; font-size: 26px; fill: #f6ead0; }
+.radial .prophet .ps { font-family: "Amiri", serif; font-weight: 700; font-size: 30px; fill: #d8ac52; }
+.radial .rnode.flash circle:not(.halo) { animation: rflash 1.4s ease 2; }
+@keyframes rflash { 50% { stroke: var(--gold); stroke-width: 9; } }

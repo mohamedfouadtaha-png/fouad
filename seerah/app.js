@@ -57,7 +57,8 @@
   ).join("");
 
   // ===== الشجرة =====
-  let mode = store.get("seerah.treeMode") || "tree";
+  const MODES = ["circle", "tree", "list"]; // دائرية، شجرة من أعلى لأسفل، قائمة
+  let mode = MODES.includes(store.get("seerah.treeMode2")) ? store.get("seerah.treeMode2") : "circle";
   const collapsedState = new Map(); // مفتاح المسار -> مطوي؟
 
   function nodeHTML(n, path) {
@@ -143,8 +144,8 @@
   function renderTree() {
     const z = $("#treeZoom");
     z.className = "tree-zoom mode-" + mode;
-    z.innerHTML = mode === "tree" ? radialSVG() : `<ul>${nodeHTML(TREE, "r")}</ul>`;
-    $("#expandAll").hidden = mode === "tree";
+    z.innerHTML = mode === "circle" ? radialSVG() : `<ul>${nodeHTML(TREE, "r")}</ul>`;
+    $("#expandAll").hidden = mode === "circle";
     document.querySelectorAll(".seg-btn").forEach(b => b.classList.toggle("active", b.dataset.mode === mode));
   }
 
@@ -182,14 +183,14 @@
     applyView(anim);
   }
   function centerOn(id, flash) {
-    if (mode === "list") {
-      // افتح كل الآباء حتى يظهر الشخص في القائمة
+    if (mode !== "circle") {
+      // افتح كل الآباء حتى يظهر الشخص في الشجرة أو القائمة
       const path = findPath(TREE, id, "r");
       if (!path) return false;
       path.slice(0, -1).forEach(k => collapsedState.set(k, false));
       renderTree();
     }
-    const el = focusNode(id, Math.max(view.s, 0.85), mode === "tree" ? 0.5 : 1 / 3, true);
+    const el = focusNode(id, Math.max(view.s, 0.85), mode === "circle" ? 0.5 : 1 / 3, true);
     if (!el) return false;
     treeFitted = true;
     if (flash) { el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
@@ -211,7 +212,7 @@
   const START_S = 0.4;
   function initialView() {
     fitTree();
-    if (mode === "tree" && view.s < START_S) focusNode("prophet", START_S, 0.42, false);
+    if (mode !== "list" && view.s < START_S) focusNode("prophet", START_S, mode === "circle" ? 0.42 : 0.3, false);
   }
   function findPath(n, id, key) {
     if (n.id === id) return [key];
@@ -229,7 +230,7 @@
     if (t) { toggleKey(t.dataset.toggle); return; }
   });
   document.querySelectorAll(".seg-btn").forEach(b => b.addEventListener("click", () => {
-    mode = b.dataset.mode; store.set("seerah.treeMode", mode); renderTree(); initialView();
+    mode = b.dataset.mode; store.set("seerah.treeMode2", mode); renderTree(); initialView();
   }));
   const zoomCenter = f => zoomAt(view.s * f, wrap.clientWidth / 2, wrap.clientHeight / 2, true);
   $("#zoomIn").addEventListener("click", () => zoomCenter(1.4));

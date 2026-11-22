@@ -4,7 +4,9 @@
   "webDir": "www",
   "backgroundColor": "#f6f1e6",
   "ios": { "contentInset": "never" },
+  "android": { "backgroundColor": "#0b3f32" },
   "plugins": {
+    "SystemBars": { "insetsHandling": "native", "initialViewportFitValueHint": "cover", "style": "DARK" },
     "LocalNotifications": { "iconColor": "#0d4a3a" },
     "SplashScreen": { "launchAutoHide": false, "backgroundColor": "#0d4a3a", "showSpinner": false }
   }

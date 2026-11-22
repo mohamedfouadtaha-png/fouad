@@ -1,0 +1,10 @@
+{
+  "appId": "com.mohamedfouad.seerah",
+  "appName": "السيرة النبوية",
+  "webDir": "www",
+  "backgroundColor": "#f6f1e6",
+  "ios": { "contentInset": "never" },
+  "plugins": {
+    "LocalNotifications": { "iconColor": "#0d4a3a" }
+  }
+}

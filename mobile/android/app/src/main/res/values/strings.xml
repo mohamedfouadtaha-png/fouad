@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">السيرة النبوية</string>
+    <string name="title_activity_main">السيرة النبوية</string>
+    <string name="package_name">com.mohamedfouad.seerah</string>
+    <string name="custom_url_scheme">com.mohamedfouad.seerah</string>
+</resources>

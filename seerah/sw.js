@@ -1,6 +1,8 @@
 // يعمل التطبيق بدون إنترنت بعد أول فتح
-const CACHE = "seerah-v1";
-const ASSETS = ["./", "index.html", "styles.css", "app.js", "data-people.js", "data-seerah.js", "manifest.webmanifest", "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png"];
+const CACHE = "seerah-v2";
+const ASSETS = ["./", "index.html", "styles.css", "app.js", "data-people.js", "data-seerah.js", "manifest.webmanifest", "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png",
+  "fonts/amiri-arabic-400-normal.woff2", "fonts/amiri-arabic-700-normal.woff2", "fonts/tajawal-arabic-400-normal.woff2",
+  "fonts/tajawal-arabic-500-normal.woff2", "fonts/tajawal-arabic-700-normal.woff2", "fonts/tajawal-arabic-800-normal.woff2"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
@@ -17,10 +19,5 @@ self.addEventListener("fetch", e => {
     e.respondWith(fetch(req).then(res => {
       const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); return res;
     }).catch(() => caches.match(req).then(r => r || caches.match("index.html"))));
-  } else if (url.hostname.endsWith("googleapis.com") || url.hostname.endsWith("gstatic.com")) {
-    // الخطوط: من الذاكرة أولًا
-    e.respondWith(caches.match(req).then(r => r || fetch(req).then(res => {
-      const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); return res;
-    })));
   }
 });

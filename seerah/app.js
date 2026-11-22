@@ -311,7 +311,76 @@
     else if (item.t === "e") html = eventHTML(item.e);
     $("#sheetBody").innerHTML = html;
     $("#sheetBody").scrollTop = 0;
+    updateFavBtn(item);
   }
+
+  // ===== المفضلة =====
+  const favKey = it => it.t === "e" ? "e:" + it.e.title : it.t + ":" + it.id;
+  const loadFavs = () => { try { const a = JSON.parse(store.get("seerah.favs") || "[]"); return Array.isArray(a) ? a : []; } catch { return []; } };
+  let favs = loadFavs();
+  function updateFavBtn(item) {
+    const on = favs.includes(favKey(item)), b = $("#sheetFav");
+    b.textContent = on ? "★" : "☆"; b.setAttribute("aria-pressed", on);
+    b.setAttribute("aria-label", on ? "إزالة من المفضلة" : "إضافة إلى المفضلة");
+  }
+  function renderFavs() {
+    const chips = favs.map(k => {
+      const [t, ...rest] = k.split(":"), v = rest.join(":");
+      if (t === "p" && P[v]) return `<button class="plink" data-open="${v}">${esc(shortName(v))}</button>`;
+      if (t === "g" && G[v]) return `<button class="plink gold" data-open="${v}">${esc(G[v].name)}</button>`;
+      const i = window.EVENTS.findIndex(e => e.title === v);
+      return t === "e" && i >= 0 ? `<button class="plink" data-event="${i}">${esc(v)}</button>` : "";
+    }).join("");
+    $("#favs").innerHTML = `<h3><span>★</span> مفضلتي</h3>` +
+      (chips ? `<div class="ev-links">${chips}</div>` : `<div class="empty">اضغط ☆ في أي نبذة أو غزوة أو حدث لحفظها هنا.</div>`);
+  }
+  $("#sheetFav").addEventListener("click", () => {
+    const it = stack[stack.length - 1]; if (!it) return;
+    const k = favKey(it);
+    favs = favs.includes(k) ? favs.filter(x => x !== k) : [...favs, k];
+    store.set("seerah.favs", JSON.stringify(favs));
+    updateFavBtn(it); renderFavs();
+  });
+
+  // ===== حدث اليوم والتذكير اليومي =====
+  const Cap = window.Capacitor;
+  const isNative = !!(Cap && Cap.isNativePlatform && Cap.isNativePlatform());
+  const LN = isNative && Cap.Plugins ? Cap.Plugins.LocalNotifications : null;
+  const dayNo = d => Math.floor((d.getTime() - d.getTimezoneOffset() * 6e4) / 864e5);
+  const eventForDay = n => ((n % window.EVENTS.length) + window.EVENTS.length) % window.EVENTS.length;
+  const NOTIFY_HOUR = 20, NOTIFY_DAYS = 30;
+  function renderToday() {
+    const i = eventForDay(dayNo(new Date())), e = window.EVENTS[i];
+    const on = store.get("seerah.notify") === "1";
+    $("#today").innerHTML = `<div class="today-k">من السيرة اليوم</div><h2>${esc(e.title)}</h2><p>${esc(e.text)}</p>
+      <div class="today-foot"><button class="btn-ghost" data-event="${i}">اقرأ المزيد</button>
+      ${LN ? `<button class="switch" id="notifySw" role="switch" aria-checked="${on}"><i></i>تذكير يومي الساعة 8 مساءً</button>` : ""}</div>`;
+  }
+  async function scheduleDaily() {
+    if (!LN) return;
+    const pending = await LN.getPending();
+    if (pending.notifications.length) await LN.cancel({ notifications: pending.notifications.map(n => ({ id: n.id })) });
+    if (store.get("seerah.notify") !== "1") return;
+    const now = new Date(), list = [];
+    for (let d = 0; d < NOTIFY_DAYS; d++) {
+      const at = new Date(now.getFullYear(), now.getMonth(), now.getDate() + d, NOTIFY_HOUR, 0, 0);
+      if (at <= now) continue;
+      const i = eventForDay(dayNo(at)), e = window.EVENTS[i];
+      list.push({ id: 1000 + d, title: "من السيرة اليوم: " + e.title, body: e.text.length > 140 ? e.text.slice(0, 140) + "…" : e.text, schedule: { at, allowWhileIdle: true }, extra: { event: i } });
+    }
+    if (list.length) await LN.schedule({ notifications: list });
+  }
+  $("#today").addEventListener("click", async e => {
+    const sw = e.target.closest("#notifySw"); if (!sw) return;
+    const turnOn = sw.getAttribute("aria-checked") !== "true";
+    if (turnOn) {
+      const perm = await LN.requestPermissions();
+      if (perm.display !== "granted") { alert("لازم تسمح بالإشعارات من إعدادات الموبايل عشان التذكير يشتغل."); return; }
+    }
+    store.set("seerah.notify", turnOn ? "1" : "0");
+    sw.setAttribute("aria-checked", turnOn);
+    scheduleDaily().catch(() => {});
+  });
   function openItem(item) {
     stack.push(item);
     history.pushState({ sheet: stack.length }, "");
@@ -381,10 +450,23 @@
 
   // ===== البداية =====
   renderTree(); renderPeriods(); renderTimeline(); renderGhazawat(); renderPeopleChips(); renderPeople(); showBest();
+  renderToday(); renderFavs();
   showView(store.get("seerah.view") || "tree");
   requestAnimationFrame(() => centerOn("prophet"));
 
-  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+  if (isNative) {
+    // داخل تطبيق الموبايل: شريط الحالة، وتجديد الإشعارات، وفتح الحدث عند الضغط على الإشعار
+    const SB = Cap.Plugins.StatusBar;
+    if (SB) { SB.setStyle({ style: "DARK" }).catch(() => {}); SB.setBackgroundColor && SB.setBackgroundColor({ color: "#0b3f32" }).catch(() => {}); }
+    if (Cap.Plugins.SplashScreen) Cap.Plugins.SplashScreen.hide().catch(() => {});
+    if (LN) {
+      scheduleDaily().catch(() => {});
+      LN.addListener("localNotificationActionPerformed", a => {
+        const i = a.notification && a.notification.extra && a.notification.extra.event;
+        if (window.EVENTS[i]) { showView("essentials"); openItem({ t: "e", e: window.EVENTS[i] }); }
+      });
+    }
+  } else if ("serviceWorker" in navigator && location.protocol !== "file:") {
     window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
   }
 })();

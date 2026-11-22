@@ -11,9 +11,6 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="السيرة النبوية">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -84,6 +81,8 @@
 
   <!-- المختصر -->
   <section class="view" id="view-essentials" data-sub="ما لا يسع المسلم جهله">
+    <div class="today card" id="today"></div>
+    <div class="favs card" id="favs"></div>
     <div class="quiz-cta card" id="quizCta">
       <div>
         <h2>اختبر معلوماتك</h2>
@@ -111,6 +110,7 @@
 <aside class="sheet" id="sheet" aria-modal="true" role="dialog">
   <div class="sheet-grab"></div>
   <button class="sheet-close" id="sheetClose" aria-label="إغلاق">✕</button>
+  <button class="sheet-fav" id="sheetFav" aria-label="إضافة إلى المفضلة" aria-pressed="false">☆</button>
   <div class="sheet-body" id="sheetBody"></div>
 </aside>
 

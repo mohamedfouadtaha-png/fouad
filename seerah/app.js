@@ -77,9 +77,7 @@
       box = `<button class="node group" data-toggle="${key}"><span class="nm">${n.icon ? n.icon + " " : ""}${esc(n.label)}</span><span class="tt">${kids.length} أشخاص</span></button>`;
     }
     const tog = kids.length ? `<button class="toggle" data-toggle="${key}" aria-label="فتح وطي">${collapsed ? kids.length : ""}</button>` : "";
-    // في الشجرة: لو كل الأولاد من غير فروع نرصّهم تحت بعض عشان الشجرة تبقى أضيق
-    const stack = mode === "tree" && kids.length >= 2 && kids.every(c => !(c.children || []).length);
-    const sub = kids.length ? `<ul${stack ? ' class="stack"' : ""}>${(stack ? kids : ordered).map(c => nodeHTML(c, key + "/" + kids.indexOf(c))).join("")}</ul>` : "";
+    const sub = kids.length ? `<ul>${ordered.map(c => nodeHTML(c, key + "/" + kids.indexOf(c))).join("")}</ul>` : "";
     return `<li class="${collapsed ? "collapsed" : ""}" data-key="${key}"><div class="node-box">${box}${tog}</div>${sub}</li>`;
   }
 

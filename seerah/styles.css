@@ -392,11 +392,3 @@ li:not(.collapsed) > .node-box .toggle::before { content: "−"; }
 .rnode:active .dot { filter: brightness(.95); }
 .rnode.flash .dot { animation: rflash 1.4s ease 2; }
 @keyframes rflash { 50% { box-shadow: 0 0 0 9px var(--gold); } }
-
-/* الشجرة: الأولاد اللي من غير فروع تحت بعض في عمود (أضيق) */
-.mode-tree ul.stack { flex-direction: column; align-items: center; gap: 6px; padding-top: 18px; }
-.mode-tree ul.stack::before { height: auto; bottom: 14px; z-index: 0; }
-.mode-tree ul.stack > li { padding: 0; }
-.mode-tree ul.stack > li::before, .mode-tree ul.stack > li::after, .mode-tree ul.stack > li > .node-box::before { display: none; }
-.mode-tree ul.stack .node-box { z-index: 1; }
-.mode-tree ul.stack .node { min-width: 96px; }

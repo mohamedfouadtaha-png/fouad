@@ -5,6 +5,7 @@
   "backgroundColor": "#f6f1e6",
   "ios": { "contentInset": "never" },
   "plugins": {
-    "LocalNotifications": { "iconColor": "#0d4a3a" }
+    "LocalNotifications": { "iconColor": "#0d4a3a" },
+    "SplashScreen": { "launchAutoHide": false, "backgroundColor": "#0d4a3a", "showSpinner": false }
   }
 }

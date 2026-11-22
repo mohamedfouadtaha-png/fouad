@@ -369,6 +369,8 @@
       list.push({ id: 1000 + d, title: "من السيرة اليوم: " + e.title, body: e.text.length > 140 ? e.text.slice(0, 140) + "…" : e.text, schedule: { at, allowWhileIdle: true }, extra: { event: i } });
     }
     if (list.length) await LN.schedule({ notifications: list });
+    // schedule() قد ينجح ظاهريًا بينما يرفض النظام الحفظ، فنتحقق من العدد الفعلي
+    return list.length ? (await LN.getPending()).notifications.length : -1;
   }
   $("#today").addEventListener("click", async e => {
     const sw = e.target.closest("#notifySw"); if (!sw) return;
@@ -379,7 +381,13 @@
     }
     store.set("seerah.notify", turnOn ? "1" : "0");
     sw.setAttribute("aria-checked", turnOn);
-    scheduleDaily().catch(() => {});
+    if (!turnOn) { scheduleDaily().catch(() => {}); return; }
+    const count = await scheduleDaily().catch(() => 0);
+    if (count === 0) {
+      store.set("seerah.notify", "0");
+      sw.setAttribute("aria-checked", "false");
+      alert("ما قدرناش نفعّل التذكير. اتأكد إن الإشعارات مسموحة للتطبيق من الإعدادات، واقفل التطبيق وافتحه وجرّب تاني.");
+    }
   });
   function openItem(item) {
     stack.push(item);
@@ -455,10 +463,10 @@
   requestAnimationFrame(() => centerOn("prophet"));
 
   if (isNative) {
-    // داخل تطبيق الموبايل: شريط الحالة، وتجديد الإشعارات، وفتح الحدث عند الضغط على الإشعار
+    // داخل تطبيق الموبايل: إخفاء شاشة البداية بعد الرسم، شريط الحالة، تجديد الإشعارات، وفتح الحدث عند الضغط على الإشعار
+    if (Cap.Plugins.SplashScreen) requestAnimationFrame(() => Cap.Plugins.SplashScreen.hide({ fadeOutDuration: 250 }).catch(() => {}));
     const SB = Cap.Plugins.StatusBar;
     if (SB) { SB.setStyle({ style: "DARK" }).catch(() => {}); SB.setBackgroundColor && SB.setBackgroundColor({ color: "#0b3f32" }).catch(() => {}); }
-    if (Cap.Plugins.SplashScreen) Cap.Plugins.SplashScreen.hide().catch(() => {});
     if (LN) {
       scheduleDaily().catch(() => {});
       LN.addListener("localNotificationActionPerformed", a => {

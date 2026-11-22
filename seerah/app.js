@@ -618,7 +618,11 @@
 
   if (isNative) {
     // داخل تطبيق الموبايل: إخفاء شاشة البداية بعد الرسم، شريط الحالة، تجديد الإشعارات، وفتح الحدث عند الضغط على الإشعار
-    if (Cap.Plugins.SplashScreen) requestAnimationFrame(() => Cap.Plugins.SplashScreen.hide({ fadeOutDuration: 250 }).catch(() => {}));
+    // نخفي شاشة البداية مباشرة، ومرة احتياطية بعد ثانية، ومع كل رجوع للتطبيق
+    // (requestAnimationFrame مش بيشتغل لو الـ WebView مش ظاهر، فممكن الشاشة تفضل سودا)
+    const hideSplash = () => Cap.Plugins.SplashScreen && Cap.Plugins.SplashScreen.hide({ fadeOutDuration: 250 }).catch(() => {});
+    hideSplash(); setTimeout(hideSplash, 1000);
+    if (Cap.Plugins.App) Cap.Plugins.App.addListener("resume", hideSplash);
     const SB = Cap.Plugins.StatusBar;
     if (SB) { SB.setStyle({ style: "DARK" }).catch(() => {}); SB.setBackgroundColor && SB.setBackgroundColor({ color: "#0b3f32" }).catch(() => {}); }
     // زرار الرجوع في أندرويد: يقفل البحث أو النبذة الأول، ويخرج من التطبيق بس لو مفيش حاجة مفتوحة

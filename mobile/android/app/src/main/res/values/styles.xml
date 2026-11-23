@@ -19,5 +19,9 @@
 
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@drawable/splash</item>
+        <!-- شاشة البداية في Android 12+: خلفية خضرا ولوجو «محمد ﷺ» -->
+        <item name="windowSplashScreenBackground">@color/seerah_bars</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
     </style>
 </resources>

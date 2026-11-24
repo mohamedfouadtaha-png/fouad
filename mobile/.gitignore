@@ -7,3 +7,7 @@ android/local.properties
 ios/App/Pods/
 ios/App/build/
 ios/DerivedData/
+# مفاتيح التوقيع: ما تترفعش أبدًا
+android/keystore.properties
+*.jks
+*.keystore

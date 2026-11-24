@@ -86,7 +86,8 @@ cd android && JAVA_HOME=~/jdks/temurin-21/Contents/Home ./gradlew bundleRelease
 | Privacy policy | الرابط اللي فوق |
 | Ads | **No, my app does not contain ads** |
 | App access | **All functionality is available without special access** |
-| Content rating | املأ الاستبيان: الفئة **Reference, News, or Educational**، وجاوب **No** على كل أسئلة العنف والمحتوى الحساس (الغزوات مذكورة نصًا تاريخيًا بدون صور عنف) |
+| Content rating | املأ استبيان IARC: الفئة **All Other App Types**، وجاوب **No** على كل أسئلة العنف والمحتوى الحساس (الغزوات مذكورة نصًا تاريخيًا بدون صور عنف). لازم توافق بنفسك على شروط IARC |
+| App-level trader status | إقرار قانوني (قانون DSA الأوروبي) **قرارك انت**: «Trader» يعرض بيانات تواصلك لمستخدمي أوروبا؛ «Not a trader» للتطبيقات غير التجارية (مجانية بدون إعلانات أو مشتريات) |
 | Target audience | **13 سنة وأكبر** (أبسط؛ اختيار الأطفال بيدخلك في متطلبات برنامج Families الإضافية) |
 | Data safety | **Does your app collect or share user data? → No** (التطبيق مش بيبعت أي بيانات؛ المفضلة والإعدادات على الجهاز بس) |
 | Government app / Financial / Health | No |

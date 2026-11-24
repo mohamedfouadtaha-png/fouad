@@ -44,11 +44,12 @@
   const root = document.documentElement;
   const savedTheme = store.get("seerah.theme");
   if (savedTheme) root.dataset.theme = savedTheme;
-  $("#themeBtn").addEventListener("click", () => {
-    const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
-    root.dataset.theme = dark ? "light" : "dark";
+  const isDark = () => root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  function toggleTheme() {
+    root.dataset.theme = isDark() ? "light" : "dark";
     store.set("seerah.theme", root.dataset.theme);
-  });
+    document.querySelectorAll(".theme-sw").forEach(sw => sw.setAttribute("aria-checked", isDark()));
+  }
 
   // ===== النسب =====
   $("#lineage").innerHTML = window.LINEAGE.map(([n, id], i) =>
@@ -463,6 +464,7 @@
     if (item.t === "p") html = personHTML(item.id);
     else if (item.t === "g") html = ghazwaHTML(G[item.id]);
     else if (item.t === "e") html = eventHTML(item.e);
+    else if (item.t === "s") html = settingsHTML();
     $("#sheetBody").innerHTML = html;
     $("#sheetBody").scrollTop = 0;
     updateFavBtn(item);
@@ -474,6 +476,7 @@
   let favs = loadFavs();
   function updateFavBtn(item) {
     const on = favs.includes(favKey(item)), b = $("#sheetFav");
+    b.hidden = item.t === "s"; // صفحة الإعدادات من غير نجمة
     b.textContent = on ? "★" : "☆"; b.setAttribute("aria-pressed", on);
     b.setAttribute("aria-label", on ? "إزالة من المفضلة" : "إضافة إلى المفضلة");
   }
@@ -508,7 +511,7 @@
     const on = store.get("seerah.notify") === "1";
     $("#today").innerHTML = `<div class="today-k">من السيرة اليوم</div><h2>${esc(e.title)}</h2><p>${esc(e.text)}</p>
       <div class="today-foot"><button class="btn-ghost" data-event="${i}">اقرأ المزيد</button>
-      ${LN ? `<button class="switch" id="notifySw" role="switch" aria-checked="${on}"><i></i>تذكير يومي الساعة 8 مساءً</button>` : ""}</div>`;
+      ${LN ? `<button class="switch notify-sw" role="switch" aria-checked="${on}"><i></i>تذكير يومي الساعة 8 مساءً</button>` : ""}</div>`;
   }
   async function scheduleDaily() {
     if (!LN) return;
@@ -527,22 +530,66 @@
     // schedule() قد ينجح ظاهريًا بينما يرفض النظام الحفظ، فنتحقق من العدد الفعلي
     return list.length ? (await LN.getPending()).notifications.length : -1;
   }
-  $("#today").addEventListener("click", async e => {
-    const sw = e.target.closest("#notifySw"); if (!sw) return;
-    const turnOn = sw.getAttribute("aria-checked") !== "true";
+  // سويتش التذكير (في كارت اليوم وفي الإعدادات) — كلهم متزامنين
+  const setNotifyUI = on => document.querySelectorAll(".notify-sw").forEach(sw => sw.setAttribute("aria-checked", on));
+  async function toggleNotify(turnOn) {
     if (turnOn) {
       const perm = await LN.requestPermissions();
       if (perm.display !== "granted") { alert("لازم تسمح بالإشعارات من إعدادات الموبايل عشان التذكير يشتغل."); return; }
     }
     store.set("seerah.notify", turnOn ? "1" : "0");
-    sw.setAttribute("aria-checked", turnOn);
+    setNotifyUI(turnOn);
     if (!turnOn) { scheduleDaily().catch(() => {}); return; }
     const count = await scheduleDaily().catch(() => 0);
     if (count === 0) {
       store.set("seerah.notify", "0");
-      sw.setAttribute("aria-checked", "false");
+      setNotifyUI(false);
       alert("ما قدرناش نفعّل التذكير. اتأكد إن الإشعارات مسموحة للتطبيق من الإعدادات، واقفل التطبيق وافتحه وجرّب تاني.");
     }
+  }
+
+  // ===== الإعدادات وبلاغ المشاكل =====
+  const APP_VERSION = "1.1";
+  const REPORT_WHATSAPP = "966561415747"; // رقم استقبال البلاغات (بصيغة wa.me: من غير + أو 00)
+  let nativeVersion = null;
+  if (isNative && Cap.Plugins.App && Cap.Plugins.App.getInfo) Cap.Plugins.App.getInfo().then(i => { nativeVersion = `${i.version} (${i.build})`; }).catch(() => {});
+  const versionText = () => nativeVersion || APP_VERSION;
+  function deviceText() {
+    const ua = navigator.userAgent;
+    const android = ua.match(/Android\s([\d.]+);\s*([^;)]+?)(?:\sBuild|\))/);
+    if (android) return `Android ${android[1]} — ${android[2].trim()}`;
+    const ios = ua.match(/OS (\d+[_\d]*) like Mac OS X/);
+    if (ios) return `iOS ${ios[1].replace(/_/g, ".")} — ${/iPad/.test(ua) ? "iPad" : "iPhone"}`;
+    return ua.slice(0, 120);
+  }
+  function reportURL() {
+    const msg = ["بلاغ عن مشكلة في تطبيق السيرة النبوية", "",
+      `النسخة: ${versionText()}${isNative ? "" : " (ويب)"}`, `الجهاز: ${deviceText()}`, `حجم الشاشة: ${screen.width}×${screen.height}`, "",
+      "اكتب المشكلة هنا:", ""].join("\n");
+    return `https://wa.me/${REPORT_WHATSAPP}?text=${encodeURIComponent(msg)}`;
+  }
+  function openExternal(url) {
+    // في التطبيق: Capacitor بيفتح الروابط الخارجية برّه الـ WebView (واتساب/المتصفح)
+    if (isNative) window.location.href = url; else window.open(url, "_blank", "noopener");
+  }
+  function settingsHTML() {
+    const notifyOn = store.get("seerah.notify") === "1";
+    return `<div class="sh-head"><h2 class="sh-name">الإعدادات</h2></div>
+      <div class="set-list">
+        <button class="set-row switch theme-sw" role="switch" aria-checked="${isDark()}"><span>الوضع الليلي</span><i></i></button>
+        ${LN ? `<button class="set-row switch notify-sw" role="switch" aria-checked="${notifyOn}"><span>تذكير يومي الساعة 8 مساءً</span><i></i></button>` : ""}
+        <button class="set-row" id="reportBtn"><span>أبلغ عن مشكلة</span><b class="wa">واتساب ‹</b></button>
+        <button class="set-row" data-ext="https://mohamedfouadtaha-png.github.io/fouad/seerah/privacy/"><span>سياسة الخصوصية</span><b>‹</b></button>
+      </div>
+      <p class="set-ver">السيرة النبوية · الإصدار ${esc(versionText())}</p>`;
+  }
+  $("#settingsBtn").addEventListener("click", () => openItem({ t: "s" }));
+  document.addEventListener("click", e => {
+    if (e.target.closest(".theme-sw")) { toggleTheme(); return; }
+    const nsw = e.target.closest(".notify-sw");
+    if (nsw && LN) { toggleNotify(nsw.getAttribute("aria-checked") !== "true"); return; }
+    if (e.target.closest("#reportBtn")) { openExternal(reportURL()); return; }
+    const ext = e.target.closest("[data-ext]"); if (ext) openExternal(ext.dataset.ext);
   });
   function openItem(item) {
     stack.push(item);

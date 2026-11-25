@@ -42,6 +42,25 @@ const FONTS = `
   await fg.evaluate(() => document.fonts.ready);
   await fg.screenshot({ path: path.join(OUT, "feature-1024x500.png") });
 
+  // 2ب) بانر الـ Header في App Store Connect (3840×1646): نفس تصميم صورة الغلاف بمقياس أكبر
+  const hd = await b.newPage({ viewport: { width: 1024, height: 439 }, deviceScaleFactor: 3.75 });
+  await hd.setContent(`<style>${FONTS}body{margin:0}</style>
+  <div dir="rtl" style="width:1024px;height:439px;display:flex;align-items:center;justify-content:center;gap:60px;
+    background:radial-gradient(circle at 30% 45%,#1a7f63 0%,#0f5643 55%,#0b3f32 100%);color:#f6ead0;position:relative;overflow:hidden">
+    <svg width="760" height="760" viewBox="0 0 100 100" style="position:absolute;left:-200px;top:-160px;opacity:.12">
+      <g fill="none" stroke="#d8ac52" stroke-width=".6"><rect x="17" y="17" width="66" height="66"/><rect x="17" y="17" width="66" height="66" transform="rotate(45 50 50)"/><circle cx="50" cy="50" r="30"/></g></svg>
+    <div style="display:flex;flex-direction:column;align-items:center;line-height:1;position:relative">
+      <div style="font-family:Amiri;font-weight:700;color:#d8ac52;font-size:56px">ﷺ</div>
+      <div style="font-family:Ruqaa;font-weight:700;font-size:136px;margin-top:-6px">محمد</div>
+    </div>
+    <div style="position:relative">
+      <div style="font-family:Amiri;font-weight:700;font-size:62px;line-height:1.2">السيرة النبوية</div>
+      <div style="font-family:Tajawal;font-weight:500;font-size:26px;color:#f3e4bf;margin-top:10px;line-height:1.6;white-space:nowrap">شجرة النسب الشريف · الغزوات<br>الصحابة · وما لا يسع المسلم جهله</div>
+    </div>
+  </div>`);
+  await hd.evaluate(() => document.fonts.ready);
+  await hd.screenshot({ path: path.join(OUT, "appstore-header-3840x1646.png") });
+
   // 3) لقطات الشاشة: Google Play بمقاس 1080×1920، و App Store (آيفون 6.9") بمقاس 1290×2796
   async function shots(dir, width, height) {
     fs.mkdirSync(path.join(OUT, dir), { recursive: true });

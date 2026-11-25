@@ -1,4 +1,4 @@
-// يولّد صور متجر Google Play: الأيقونة 512، وصورة الغلاف 1024×500، ولقطات شاشة 1080×1920
+// يولّد صور المتاجر: أيقونة Play 512، وصورة الغلاف 1024×500، ولقطات شاشة لـ Google Play و App Store
 // التشغيل: node scripts/make-store-assets.js  (يحتاج playwright متاحًا في النظام، و python3 مع Pillow)
 const { chromium } = require("playwright");
 const { execFileSync } = require("child_process");
@@ -8,7 +8,7 @@ const path = require("path");
 const ROOT = path.join(__dirname, "..");
 const WEB = path.join(ROOT, "../seerah");
 const OUT = path.join(ROOT, "store");
-fs.mkdirSync(path.join(OUT, "screenshots"), { recursive: true });
+fs.mkdirSync(OUT, { recursive: true });
 const b64 = f => fs.readFileSync(f).toString("base64");
 const FONTS = `
 @font-face{font-family:Ruqaa;font-weight:700;src:url(data:font/woff2;base64,${b64(path.join(__dirname, "fonts/aref-ruqaa-arabic-700-normal.woff2"))})}
@@ -42,25 +42,30 @@ const FONTS = `
   await fg.evaluate(() => document.fonts.ready);
   await fg.screenshot({ path: path.join(OUT, "feature-1024x500.png") });
 
-  // 3) لقطات الشاشة 1080×1920 (360×640 بمقياس 3)
-  const ctx = await b.newContext({ viewport: { width: 360, height: 640 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
-  const p = await ctx.newPage();
-  await p.goto("file://" + path.join(WEB, "index.html"));
-  await p.evaluate(() => { localStorage.clear(); localStorage.setItem("seerah.theme", "light"); });
-  await p.reload(); await p.waitForTimeout(900);
-  const shot = async name => { await p.waitForTimeout(500); await p.screenshot({ path: path.join(OUT, "screenshots", name + ".png") }); };
-  const hideHint = () => p.evaluate(() => document.getElementById("treeHint").classList.add("gone"));
-  await hideHint(); await shot("1-tree-circle");
-  await p.tap('[data-tid="prophet"] .dot'); await shot("2-profile");
-  await p.click("#sheetClose"); await p.waitForTimeout(400);
-  await p.click('.seg-btn[data-mode="tree"]'); await p.click("#centerBtn"); await hideHint(); await shot("3-tree-classic");
-  await p.click('.nav-btn[data-view="seerah"]'); await p.click(".ev-card >> nth=0"); await shot("4-seerah");
-  await p.click('.nav-btn[data-view="ghazawat"]'); await shot("5-battles");
-  await p.click(".g-card >> nth=0"); await shot("6-badr");
-  await p.click("#sheetClose"); await p.waitForTimeout(400);
-  await p.click('.nav-btn[data-view="people"]'); await shot("7-people");
-  await p.click('.nav-btn[data-view="essentials"]'); await shot("8-essentials");
-  await p.click('.seg-btn[data-mode="circle"]').catch(() => {});
+  // 3) لقطات الشاشة: Google Play بمقاس 1080×1920، و App Store (آيفون 6.9") بمقاس 1290×2796
+  async function shots(dir, width, height) {
+    fs.mkdirSync(path.join(OUT, dir), { recursive: true });
+    const ctx = await b.newContext({ viewport: { width, height }, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+    const p = await ctx.newPage();
+    await p.goto("file://" + path.join(WEB, "index.html"));
+    await p.evaluate(() => { localStorage.clear(); localStorage.setItem("seerah.theme", "light"); });
+    await p.reload(); await p.waitForTimeout(900);
+    const shot = async name => { await p.waitForTimeout(500); await p.screenshot({ path: path.join(OUT, dir, name + ".png") }); };
+    const hideHint = () => p.evaluate(() => document.getElementById("treeHint").classList.add("gone"));
+    await hideHint(); await shot("1-tree-circle");
+    await p.tap('[data-tid="prophet"] .dot'); await shot("2-profile");
+    await p.click("#sheetClose"); await p.waitForTimeout(400);
+    await p.click('.seg-btn[data-mode="tree"]'); await p.click("#centerBtn"); await hideHint(); await shot("3-tree-classic");
+    await p.click('.nav-btn[data-view="seerah"]'); await p.click(".ev-card >> nth=0"); await shot("4-seerah");
+    await p.click('.nav-btn[data-view="ghazawat"]'); await shot("5-battles");
+    await p.click(".g-card >> nth=0"); await shot("6-badr");
+    await p.click("#sheetClose"); await p.waitForTimeout(400);
+    await p.click('.nav-btn[data-view="people"]'); await shot("7-people");
+    await p.click('.nav-btn[data-view="essentials"]'); await shot("8-essentials");
+    await ctx.close();
+  }
+  await shots("screenshots", 360, 640);
+  await shots("ios-screenshots", 430, 932);
   await b.close();
   console.log("store assets written to", OUT);
 })();

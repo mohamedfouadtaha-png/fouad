@@ -11,3 +11,4 @@ ios/DerivedData/
 android/keystore.properties
 *.jks
 *.keystore
+ios/build/

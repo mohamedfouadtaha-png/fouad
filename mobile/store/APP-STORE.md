@@ -7,7 +7,8 @@
 
 | المطلوب في App Store Connect | الجاهز |
 |---|---|
-| Screenshots (iPhone 6.9") | `ios-screenshots/*.png`، 8 صور مقاس 1290×2796 |
+| Screenshots (iPhone with Dynamic Island) | `ios-screenshots/*.png`، 8 صور مقاس 1206×2622 |
+| Header (اختياري) | `appstore-header-3840x1646.png` |
 | Privacy Policy URL | `https://mohamedfouadtaha-png.github.io/fouad/seerah/privacy/` |
 | Support URL | `https://mohamedfouadtaha-png.github.io/fouad/seerah/support/` |
 

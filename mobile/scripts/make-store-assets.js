@@ -61,7 +61,7 @@ const FONTS = `
   await hd.evaluate(() => document.fonts.ready);
   await hd.screenshot({ path: path.join(OUT, "appstore-header-3840x1646.png") });
 
-  // 3) لقطات الشاشة: Google Play بمقاس 1080×1920، و App Store (آيفون 6.9") بمقاس 1290×2796
+  // 3) لقطات الشاشة: Google Play بمقاس 1080×1920، و App Store (iPhone with Dynamic Island) بمقاس 1206×2622
   async function shots(dir, width, height) {
     fs.mkdirSync(path.join(OUT, dir), { recursive: true });
     const ctx = await b.newContext({ viewport: { width, height }, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
@@ -84,7 +84,7 @@ const FONTS = `
     await ctx.close();
   }
   await shots("screenshots", 360, 640);
-  await shots("ios-screenshots", 430, 932);
+  await shots("ios-screenshots", 402, 874); // 1206×2622 (iPhone with Dynamic Island)
   await b.close();
   console.log("store assets written to", OUT);
 })();

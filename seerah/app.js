@@ -550,7 +550,7 @@
 
   // ===== الإعدادات وبلاغ المشاكل =====
   const APP_VERSION = "1.1";
-  const REPORT_WHATSAPP = "966561415747"; // رقم استقبال البلاغات (بصيغة wa.me: من غير + أو 00)
+  const REPORT_EMAIL = "seerah.app.support@gmail.com"; // إيميل استقبال البلاغات (ظاهر للمستخدمين)
   let nativeVersion = null;
   if (isNative && Cap.Plugins.App && Cap.Plugins.App.getInfo) Cap.Plugins.App.getInfo().then(i => { nativeVersion = `${i.version} (${i.build})`; }).catch(() => {});
   const versionText = () => nativeVersion || APP_VERSION;
@@ -563,13 +563,14 @@
     return ua.slice(0, 120);
   }
   function reportURL() {
-    const msg = ["بلاغ عن مشكلة في تطبيق السيرة النبوية", "",
-      `النسخة: ${versionText()}${isNative ? "" : " (ويب)"}`, `الجهاز: ${deviceText()}`, `حجم الشاشة: ${screen.width}×${screen.height}`, "",
-      "اكتب المشكلة هنا:", ""].join("\n");
-    return `https://wa.me/${REPORT_WHATSAPP}?text=${encodeURIComponent(msg)}`;
+    const subject = "بلاغ عن مشكلة في تطبيق السيرة النبوية";
+    const body = [`النسخة: ${versionText()}${isNative ? "" : " (ويب)"}`, `الجهاز: ${deviceText()}`, `حجم الشاشة: ${screen.width}×${screen.height}`, "",
+      "اكتب المشكلة هنا:", ""].join("\r\n");
+    return `mailto:${REPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   }
   function openExternal(url) {
     // في التطبيق: Capacitor بيفتح الروابط الخارجية برّه الـ WebView (واتساب/المتصفح)
+    if (url.startsWith("mailto:")) { const a = document.createElement("a"); a.href = url; a.click(); return; } // يفتح تطبيق البريد
     if (isNative) window.location.href = url; else window.open(url, "_blank", "noopener");
   }
   function settingsHTML() {
@@ -578,7 +579,7 @@
       <div class="set-list">
         <button class="set-row switch theme-sw" role="switch" aria-checked="${isDark()}"><span>الوضع الليلي</span><i></i></button>
         ${LN ? `<button class="set-row switch notify-sw" role="switch" aria-checked="${notifyOn}"><span>تذكير يومي الساعة 8 مساءً</span><i></i></button>` : ""}
-        <button class="set-row" id="reportBtn"><span>أبلغ عن مشكلة</span><b class="wa">واتساب ‹</b></button>
+        <button class="set-row" id="reportBtn"><span>أبلغ عن مشكلة</span><b class="wa">إيميل ‹</b></button>
         <button class="set-row" data-ext="https://mohamedfouadtaha-png.github.io/fouad/seerah/privacy/"><span>سياسة الخصوصية</span><b>‹</b></button>
       </div>
       <p class="set-ver">السيرة النبوية · الإصدار ${esc(versionText())}</p>`;
